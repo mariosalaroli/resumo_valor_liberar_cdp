@@ -143,7 +143,7 @@ def data_cotacao():
     return data_base.strftime("%m/%d/%Y")
 
 
-@st.cache_data(ttl=3600)  # Cache por 1 hora
+@st.cache_data(ttl=86400)  # Cache por 24 horas
 def cotacao_bacen(moeda, data_ref):
     """
     Busca cotação PTAX de venda no Banco Central para uma moeda e data específicas.
@@ -805,7 +805,7 @@ with st.expander("🔧 Informações Técnicas"):
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
-    - Cache de cotações por 1 hora (reduz chamadas à API)
+    - Cache de cotações por 24 horas (reduz chamadas à API)
     - Validações em múltiplas etapas do processamento
     """)
 
