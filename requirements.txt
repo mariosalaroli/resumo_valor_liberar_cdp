@@ -2,4 +2,4 @@ streamlit
 pandas
 openpyxl
 requests
-git+https://github.com/thiagomarzagao/python-bcb.git
+python-bcb
