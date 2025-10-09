@@ -385,6 +385,7 @@ def gerar_excel_completo(df_csv_original, df_resumo):
     Gera arquivo Excel com todos os dados do CSV original e tabela de resumo.
     Pinta as linhas que atendem aos critérios com cores diferentes por moeda.
     Posiciona a tabela de resumo alinhando "Valor a Liberar" com a coluna correspondente do CSV.
+    Oculta colunas específicas e ajusta largura das colunas conforme especificado.
     
     Args:
         df_csv_original: DataFrame com TODOS os dados do CSV original
@@ -406,6 +407,9 @@ def gerar_excel_completo(df_csv_original, df_resumo):
         "Direito Especial - SDR": "FCE4D6",  # Laranja claro
         "Iene": "E2EFDA"            # Verde água claro
     }
+    
+    # Colunas para ocultar: A, D, E, G, H, J, K, O, W até AE (inclusive)
+    colunas_para_ocultar = ['A', 'D', 'E', 'G', 'H', 'J', 'K', 'O'] + [get_column_letter(i) for i in range(23, 32)]  # W=23 até AE=31
     
     buffer = io.BytesIO()
     
@@ -438,6 +442,20 @@ def gerar_excel_completo(df_csv_original, df_resumo):
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
             cell.border = border
+        
+        # ====== OCULTA COLUNAS ESPECÍFICAS ======
+        for col_letter in colunas_para_ocultar:
+            worksheet.column_dimensions[col_letter].hidden = True
+        
+        # ====== AJUSTA LARGURA DAS COLUNAS ESPECÍFICAS ======
+        # Coluna I: largura para caber "Caixa Econômica Federal" (aproximadamente 25 caracteres)
+        worksheet.column_dimensions['I'].width = 25
+        
+        # Coluna L: largura para caber "Direito Especial - SDR" (aproximadamente 22 caracteres)
+        worksheet.column_dimensions['L'].width = 22
+        
+        # Coluna M: largura para caber "Valor da contratação, em" (aproximadamente 24 caracteres)
+        worksheet.column_dimensions['M'].width = 24
         
         # ====== ENCONTRA A COLUNA "Valor a liberar ou assumir (na moeda de contratação)" ======
         coluna_valor_liberar = None
@@ -488,9 +506,16 @@ def gerar_excel_completo(df_csv_original, df_resumo):
         range_filtro = f"A1:{get_column_letter(ultima_coluna)}{ultima_linha_dados}"
         worksheet.auto_filter.ref = range_filtro
         
-        # Ajusta largura das colunas
+        # Ajusta largura das colunas restantes automaticamente
         for col_num, column in enumerate(df_csv_original.columns, 1):
             col_letter = get_column_letter(col_num)
+            # Pula colunas que já foram ajustadas manualmente
+            if col_letter in ['I', 'L', 'M']:
+                continue
+            # Pula colunas que estão ocultas
+            if col_letter in colunas_para_ocultar:
+                continue
+                
             max_length = len(str(column))
             for cell in worksheet[col_letter]:
                 try:
@@ -576,8 +601,8 @@ def gerar_excel_completo(df_csv_original, df_resumo):
                 # Cotação
                 col_cotacao = col_inicio + 2
                 if isinstance(row["Cotação"], (int, float)):
-                    worksheet.cell(row=excel_row, column=col_cotacao, value=row["Cotação"])
-                    worksheet.cell(row=excel_row, column=col_cotacao).number_format = '#,##0.00000'
+                    cell_cotacao = worksheet.cell(row=excel_row, column=col_cotacao, value=row["Cotação"])
+                    cell_cotacao.number_format = '#,##0.00000'
                 else:
                     worksheet.cell(row=excel_row, column=col_cotacao, value=row["Cotação"])
                 
@@ -587,8 +612,8 @@ def gerar_excel_completo(df_csv_original, df_resumo):
                 
                 # Valor em BRL - COM MÁSCARA DE REAIS
                 col_brl = col_inicio + 4
-                worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
-                worksheet.cell(row=excel_row, column=col_brl).number_format = '"R$" #,##0.00'
+                cell_brl = worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
+                cell_brl.number_format = '"R$" #,##0.00'
                 
             else:
                 # Linha TOTAL
@@ -600,8 +625,8 @@ def gerar_excel_completo(df_csv_original, df_resumo):
                 worksheet.cell(row=excel_row, column=col_valor, value="-")
                 worksheet.cell(row=excel_row, column=col_cotacao, value="-")
                 worksheet.cell(row=excel_row, column=col_data, value="-")
-                worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
-                worksheet.cell(row=excel_row, column=col_brl).number_format = '"R$" #,##0.00'
+                cell_brl = worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
+                cell_brl.number_format = '"R$" #,##0.00'
                 
                 # Formatação especial para linha TOTAL
                 total_fill = PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
@@ -776,6 +801,12 @@ with st.expander("🔧 Informações Técnicas"):
     - **Formatação de moeda**: Coluna "Valor a liberar ou assumir (na moeda de contratação)" formatada com máscara de moeda genérica
     - **Resumo destacado**: Tabela de resumo com linha TOTAL em azul claro
     - **Máscara de Reais**: Valores em BRL formatados com "R$" no Excel
+    - **Colunas ocultas**: A, D, E, G, H, J, K, O, W até AE (inclusive)
+    - **Colunas visíveis**: T, U, V (onde fica a tabela resumo)
+    - **Larguras ajustadas**: 
+        - Coluna I: 25 (para "Caixa Econômica Federal")
+        - Coluna L: 22 (para "Direito Especial - SDR")
+        - Coluna M: 24 (para "Valor da contratação, em")
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
