@@ -146,7 +146,7 @@ def data_cotacao():
 @st.cache_data(ttl=3600)  # Cache por 1 hora
 def cotacao_bacen(moeda, data_ref):
     """
-    Busca cotação PTAX de compra no Banco Central para uma moeda e data específicas.
+    Busca cotação PTAX de venda no Banco Central para uma moeda e data específicas.
     Tenta até 5 dias úteis anteriores se não encontrar na data informada.
     
     Args:
@@ -173,7 +173,8 @@ def cotacao_bacen(moeda, data_ref):
                 fechamento = df[df['tipoBoletim'] == 'Fechamento PTAX']
                 
                 if not fechamento.empty:
-                    cotacao = float(fechamento['cotacaoCompra'].values[-1])
+                    # ALTERAÇÃO: Mudou de 'cotacaoCompra' para 'cotacaoVenda'
+                    cotacao = float(fechamento['cotacaoVenda'].values[-1])
                     data_formatada = datetime.strptime(dt_busca, "%m/%d/%Y").strftime("%d/%m/%Y")
                     logger.info(f"Cotação encontrada: {cotacao} em {data_formatada}")
                     return cotacao, data_formatada
@@ -379,6 +380,250 @@ def gerar_html_tabela(df_vis):
     return html
 
 
+def gerar_excel_completo(df_csv_original, df_resumo):
+    """
+    Gera arquivo Excel com todos os dados do CSV original e tabela de resumo.
+    Pinta as linhas que atendem aos critérios com cores diferentes por moeda.
+    Posiciona a tabela de resumo alinhando "Valor a Liberar" com a coluna correspondente do CSV.
+    
+    Args:
+        df_csv_original: DataFrame com TODOS os dados do CSV original
+        df_resumo: DataFrame com a tabela de resumo
+    
+    Returns:
+        BytesIO com o arquivo Excel gerado
+    """
+    from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    
+    logger.info("Gerando arquivo Excel completo")
+    
+    # Cores por moeda (tons pastéis para melhor leitura)
+    CORES_MOEDAS = {
+        "Real": "C6EFCE",           # Verde claro
+        "Dólar dos EUA": "FFF2CC",  # Amarelo claro
+        "Euro": "DDEBF7",           # Azul claro
+        "Direito Especial - SDR": "FCE4D6",  # Laranja claro
+        "Iene": "E2EFDA"            # Verde água claro
+    }
+    
+    buffer = io.BytesIO()
+    
+    # Cria o Excel com openpyxl
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        # Escreve dados originais
+        df_csv_original.to_excel(writer, sheet_name='Dados', index=False, startrow=0)
+        
+        # Pega a planilha
+        workbook = writer.book
+        worksheet = writer.sheets['Dados']
+        
+        # Congela a primeira linha (cabeçalho) para facilitar a visualização com filtros
+        worksheet.freeze_panes = "A2"
+
+        # Formata cabeçalho dos dados originais
+        header_fill = PatternFill(start_color="1F77B4", end_color="1F77B4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Aplica formatação no cabeçalho
+        for col_num, column in enumerate(df_csv_original.columns, 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            cell.border = border
+        
+        # ====== ENCONTRA A COLUNA "Valor a liberar ou assumir (na moeda de contratação)" ======
+        coluna_valor_liberar = None
+        for col_num, column in enumerate(df_csv_original.columns, 1):
+            if column.strip() == "Valor a liberar ou assumir (na moeda de contratação)":
+                coluna_valor_liberar = col_num
+                break
+        
+        # Se não encontrou a coluna, usa a coluna 2 como fallback
+        if coluna_valor_liberar is None:
+            logger.warning("Coluna 'Valor a liberar ou assumir (na moeda de contratação)' não encontrada, usando coluna B como fallback")
+            coluna_valor_liberar = 2
+        
+        # ====== FORMATA COLUNA DE VALOR DOS DADOS ORIGINAIS ======
+        # Formata todos os valores da coluna "Valor a liberar ou assumir (na moeda de contratação)" com máscara de moeda
+        for idx in range(len(df_csv_original)):
+            excel_row = idx + 2  # +2 porque Excel começa em 1 e tem cabeçalho
+            cell_valor = worksheet.cell(row=excel_row, column=coluna_valor_liberar)
+            # Aplica formatação de moeda genérica (sem símbolo específico)
+            cell_valor.number_format = '#,##0.00'
+        
+        # Identifica registros que atendem aos critérios e pinta por moeda
+        for idx, row in df_csv_original.iterrows():
+            excel_row = idx + 2  # +2 porque Excel começa em 1 e tem cabeçalho
+            
+            # Verifica se atende aos critérios
+            atende_criterios = (
+                str(row.get("Tipo de dívida", "")).strip().lower() == "empréstimo ou financiamento" and
+                str(row.get("Situação da dívida", "")).strip().lower() == "vigente" and
+                pd.notna(row.get("Valor a liberar ou assumir (na moeda de contratação)")) and
+                float(row.get("Valor a liberar ou assumir (na moeda de contratação)", 0)) > 0
+            )
+            
+            if atende_criterios:
+                moeda = row.get("Moeda da contratação, emissão ou assunção", "")
+                cor = CORES_MOEDAS.get(moeda, "FFFFFF")
+                fill = PatternFill(start_color=cor, end_color=cor, fill_type="solid")
+                
+                # Pinta toda a linha
+                for col_num in range(1, len(df_csv_original.columns) + 1):
+                    cell = worksheet.cell(row=excel_row, column=col_num)
+                    cell.fill = fill
+                    cell.border = border
+        
+        # ====== APLICA AUTOFILTER NOS CABEÇALHOS ======
+        ultima_linha_dados = len(df_csv_original) + 1
+        ultima_coluna = len(df_csv_original.columns)
+        range_filtro = f"A1:{get_column_letter(ultima_coluna)}{ultima_linha_dados}"
+        worksheet.auto_filter.ref = range_filtro
+        
+        # Ajusta largura das colunas
+        for col_num, column in enumerate(df_csv_original.columns, 1):
+            col_letter = get_column_letter(col_num)
+            max_length = len(str(column))
+            for cell in worksheet[col_letter]:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            worksheet.column_dimensions[col_letter].width = adjusted_width
+        
+        # ====== POSICIONAMENTO DA TABELA DE RESUMO ======
+        # Adiciona tabela de resumo (4 linhas abaixo dos dados para acomodar a fórmula)
+        linha_inicio_resumo = len(df_csv_original) + 5
+        
+        # ====== ADICIONA FÓRMULA SUBTOTAL (QUE RESPEITA FILTROS) ======
+        linha_formula = len(df_csv_original) + 3
+        primeira_linha_dados = 2
+        ultima_linha_dados = len(df_csv_original) + 1
+        col_letter_valor = get_column_letter(coluna_valor_liberar)
+        
+        # CORREÇÃO: Usa SUBTOTAL(9,...) que soma apenas células visíveis (respeita filtros)
+        # 109 = função SUM que ignora linhas ocultas por filtro
+        formula = f"=SUBTOTAL(9,{col_letter_valor}{primeira_linha_dados}:{col_letter_valor}{ultima_linha_dados})"
+        
+        # Adiciona rótulo "Total" na coluna anterior
+        col_rotulo = coluna_valor_liberar - 1
+        if col_rotulo >= 1:
+            worksheet.cell(row=linha_formula, column=col_rotulo, value="Total")
+            worksheet.cell(row=linha_formula, column=col_rotulo).font = Font(bold=True)
+        
+        # Adiciona a fórmula na coluna de valor
+        cell_formula = worksheet.cell(row=linha_formula, column=coluna_valor_liberar)
+        cell_formula.value = formula
+        cell_formula.number_format = '#,##0.00'
+        cell_formula.font = Font(bold=True)
+        cell_formula.fill = PatternFill(start_color="E6E6E6", end_color="E6E6E6", fill_type="solid")
+        
+        # Título do resumo - centralizado acima da tabela
+        titulo_col = coluna_valor_liberar - 1  # Título começa uma coluna antes para centralização
+        if titulo_col < 1:
+            titulo_col = 1
+        
+        worksheet.cell(row=linha_inicio_resumo, column=titulo_col, value="RESUMO - VALOR A LIBERAR POR MOEDA")
+        titulo_cell = worksheet.cell(row=linha_inicio_resumo, column=titulo_col)
+        titulo_cell.font = Font(bold=True, size=12)
+        
+        linha_inicio_resumo += 2
+        
+        # ====== ESCREVE CABEÇALHOS DO RESUMO ALINHADOS ======
+        colunas_resumo = ["Moeda", "Valor a Liberar", "Cotação", "Data da Cotação", "Valor em BRL"]
+        
+        # Posiciona "Moeda" uma coluna antes do "Valor a Liberar"
+        col_inicio = coluna_valor_liberar - 1
+        if col_inicio < 1:
+            col_inicio = 1
+        
+        for col_num, col_name in enumerate(colunas_resumo, col_inicio):
+            cell = worksheet.cell(row=linha_inicio_resumo, column=col_num, value=col_name)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = border
+        
+        # ====== ESCREVE DADOS DO RESUMO ALINHADOS ======
+        for idx, row in df_resumo.iterrows():
+            excel_row = linha_inicio_resumo + idx + 1
+            
+            # Moeda (uma coluna antes do Valor a Liberar)
+            cell_moeda = worksheet.cell(row=excel_row, column=col_inicio, value=row["Moeda"])
+            
+            # Pinta a célula da moeda com a cor correspondente (exceto TOTAL)
+            if row["Moeda"] != "TOTAL":
+                cor_moeda = CORES_MOEDAS.get(row["Moeda"], "FFFFFF")
+                fill_moeda = PatternFill(start_color=cor_moeda, end_color=cor_moeda, fill_type="solid")
+                cell_moeda.fill = fill_moeda
+            
+            if row["Moeda"] != "TOTAL":
+                # Valor a Liberar (numérico) - na coluna alinhada
+                col_valor = col_inicio + 1
+                cell_valor_liberar = worksheet.cell(row=excel_row, column=col_valor, value=row["Valor a Liberar"])
+                cell_valor_liberar.number_format = '#,##0.00'
+                
+                # Cotação
+                col_cotacao = col_inicio + 2
+                if isinstance(row["Cotação"], (int, float)):
+                    worksheet.cell(row=excel_row, column=col_cotacao, value=row["Cotação"])
+                    worksheet.cell(row=excel_row, column=col_cotacao).number_format = '#,##0.00000'
+                else:
+                    worksheet.cell(row=excel_row, column=col_cotacao, value=row["Cotação"])
+                
+                # Data da Cotação
+                col_data = col_inicio + 3
+                worksheet.cell(row=excel_row, column=col_data, value=row["Data da Cotação"])
+                
+                # Valor em BRL - COM MÁSCARA DE REAIS
+                col_brl = col_inicio + 4
+                worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
+                worksheet.cell(row=excel_row, column=col_brl).number_format = '"R$" #,##0.00'
+                
+            else:
+                # Linha TOTAL
+                col_valor = col_inicio + 1
+                col_cotacao = col_inicio + 2
+                col_data = col_inicio + 3
+                col_brl = col_inicio + 4
+                
+                worksheet.cell(row=excel_row, column=col_valor, value="-")
+                worksheet.cell(row=excel_row, column=col_cotacao, value="-")
+                worksheet.cell(row=excel_row, column=col_data, value="-")
+                worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
+                worksheet.cell(row=excel_row, column=col_brl).number_format = '"R$" #,##0.00'
+                
+                # Formatação especial para linha TOTAL
+                total_fill = PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
+                for col in range(col_inicio, col_inicio + 5):
+                    cell = worksheet.cell(row=excel_row, column=col)
+                    cell.fill = total_fill
+                    cell.font = Font(bold=True)
+            
+            # Aplica bordas a todas as células do resumo
+            for col in range(col_inicio, col_inicio + 5):
+                worksheet.cell(row=excel_row, column=col).border = border
+        
+        # Ajusta largura das colunas do resumo
+        for col_num in range(col_inicio, col_inicio + 5):
+            col_letter = get_column_letter(col_num)
+            worksheet.column_dimensions[col_letter].width = 20
+    
+    buffer.seek(0)
+    logger.info("Arquivo Excel completo gerado com sucesso")
+    return buffer
+
+
 # ====== Interface Streamlit ======
 st.set_page_config(
     page_title="Resumo de Dívidas CDP",
@@ -447,15 +692,14 @@ if uploaded_file:
         # Botão de download
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            with io.BytesIO() as buffer:
-                df_resumo.to_excel(buffer, index=False, engine='openpyxl')
-                st.download_button(
-                    label="📥 Download em Excel (.xlsx)",
-                    data=buffer.getvalue(),
-                    file_name=f"resumo_dividas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
+            buffer_excel = gerar_excel_completo(df_csv, df_resumo)
+            st.download_button(
+                label="📥 Download em Excel (.xlsx)",
+                data=buffer_excel.getvalue(),
+                file_name=f"resumo_dividas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
         
         # Informações adicionais
         st.divider()
@@ -485,12 +729,14 @@ with st.expander("ℹ️ Instruções de Uso"):
        - Agrupar os valores por moeda
        - Converter para Real (BRL) usando cotações oficiais PTAX do Banco Central
     
-    3. **Download**: Após o processamento, faça o download da planilha Excel com os resultados
+    3. **Download**: Após o processamento, faça o download da planilha Excel com:
+       - Todos os registros do CSV original (linhas coloridas por moeda quando atendem aos critérios)
+       - Tabela de resumo abaixo com totais por moeda e conversão para BRL
     
     ---
     
     ### Sobre as cotações:
-    **Fonte**: Os valores serão convertidos para Real utilizando a cotação PTAX de compra do Banco Central, referente ao fechamento do dia
+    **Fonte**: Os valores serão convertidos para Real utilizando a cotação PTAX de venda do Banco Central, referente ao fechamento do dia
     
     **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) ou data útil anterior caso caia em final de semana ou feriado
     
@@ -500,7 +746,6 @@ with st.expander("ℹ️ Instruções de Uso"):
     - Real (BRL)
     - Dólar dos EUA (USD)
     - Euro (EUR)
-    - Direito Especial de Saque - SDR (XDR)
     - Iene (JPY)
 
     """)
@@ -511,6 +756,7 @@ with st.expander("🔧 Informações Técnicas"):
     - **Streamlit**: Interface web interativa
     - **Pandas**: Processamento e análise de dados
     - **BCB (python-bcb)**: Integração com API do Banco Central
+    - **OpenPyXL**: Geração de arquivos Excel com formatação
     - **Python 3.x**: Linguagem de programação
     
     ### Critérios de filtragem:
@@ -519,6 +765,17 @@ with st.expander("🔧 Informações Técnicas"):
     Situação da dívida = "Vigente"
     Valor a liberar > 0
     ```
+    
+    ### Formatação do Excel:
+    - **AutoFiltro**: Filtros automáticos em todas as colunas dos dados originais
+    - **Fórmula SUM**: Total geral dinâmico que se ajusta aos filtros aplicados
+    - **Linhas coloridas**: Registros que atendem aos critérios são pintados por moeda
+    - **Cores por moeda**: Verde (Real), Amarelo (Dólar), Azul (Euro), Laranja (SDR), Verde água (Iene)
+    - **Legenda visual**: Células da coluna "Moeda" na tabela de resumo pintadas com as cores correspondentes
+    - **Formato numérico**: Padrão brasileiro (#.##0,00)
+    - **Formatação de moeda**: Coluna "Valor a liberar ou assumir (na moeda de contratação)" formatada com máscara de moeda genérica
+    - **Resumo destacado**: Tabela de resumo com linha TOTAL em azul claro
+    - **Máscara de Reais**: Valores em BRL formatados com "R$" no Excel
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
