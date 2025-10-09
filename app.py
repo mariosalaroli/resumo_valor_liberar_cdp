@@ -802,11 +802,6 @@ with st.expander("🔧 Informações Técnicas"):
     - **Resumo destacado**: Tabela de resumo com linha TOTAL em azul claro
     - **Máscara de Reais**: Valores em BRL formatados com "R$" no Excel
     - **Colunas ocultas**: A, D, E, G, H, J, K, O, W até AE (inclusive)
-    - **Colunas visíveis**: T, U, V (onde fica a tabela resumo)
-    - **Larguras ajustadas**: 
-        - Coluna I: 25 (para "Caixa Econômica Federal")
-        - Coluna L: 22 (para "Direito Especial - SDR")
-        - Coluna M: 24 (para "Valor da contratação, em")
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
