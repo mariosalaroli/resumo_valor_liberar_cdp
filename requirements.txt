@@ -1,4 +1,5 @@
 streamlit
 pandas
-bcb
 openpyxl
+requests
+git+https://github.com/thiagomarzagao/python-bcb.git
