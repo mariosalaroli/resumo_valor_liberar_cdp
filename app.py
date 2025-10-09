@@ -721,7 +721,7 @@ if uploaded_file:
             st.download_button(
                 label="📥 Download em Excel (.xlsx)",
                 data=buffer_excel.getvalue(),
-                file_name=f"resumo_dividas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                file_name=f"resumo_dividas_valor_liberar_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
