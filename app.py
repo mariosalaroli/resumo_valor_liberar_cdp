@@ -160,6 +160,11 @@ def cotacao_bacen(moeda, data_ref):
         logger.info("Moeda BRL, retornando cotação 1.0")
         return 1.0, ""
     
+    # Para SDR, não busca cotação na API
+    if moeda == "XDR":
+        logger.info("Moeda SDR, retornando 'Sem cotação'")
+        return "Sem cotação", "-"
+    
     # Tenta buscar cotação nos últimos 5 dias úteis
     for i in range(5):
         dt_busca = (datetime.strptime(data_ref, "%m/%d/%Y") - timedelta(days=i)).strftime("%m/%d/%Y")
@@ -244,11 +249,19 @@ def processar_csv(df_csv):
         # Busca cotação
         cot, data_usada = cotacao_bacen(codigo, data_ref)
         
-        # Calcula valor em BRL
-        valor_brl = valor * cot if isinstance(cot, float) else valor
+        # Para SDR, não calcula valor em BRL
+        if nome_moeda == "Direito Especial - SDR":
+            valor_brl = "-"
+        else:
+            # Calcula valor em BRL para outras moedas
+            valor_brl = valor * cot if isinstance(cot, float) else valor
         
         valores.append((nome_moeda, valor, cot, data_usada, valor_brl))
-        logger.info(f"{nome_moeda}: {valor} × {cot} = R$ {valor_brl:,.2f}")
+        
+        if nome_moeda == "Direito Especial - SDR":
+            logger.info(f"SDR: {valor} × Sem cotação = -")
+        else:
+            logger.info(f"{nome_moeda}: {valor} × {cot} = R$ {valor_brl:,.2f}")
     
     # Cria DataFrame de saída
     df_saida = pd.DataFrame(
@@ -256,8 +269,8 @@ def processar_csv(df_csv):
         columns=["Moeda", "Valor a Liberar", "Cotação", "Data da Cotação", "Valor em BRL"]
     )
     
-    # Adiciona linha TOTAL
-    total_brl = df_saida["Valor em BRL"].sum()
+    # Adiciona linha TOTAL (considerando apenas moedas com valor em BRL)
+    total_brl = df_saida[df_saida["Valor em BRL"] != "-"]["Valor em BRL"].sum()
     total = pd.DataFrame(
         [["TOTAL", "", "", "", total_brl]], 
         columns=df_saida.columns
@@ -292,6 +305,8 @@ def formatar_para_exibicao(df_resumo):
             # Formata cotação
             if isinstance(row["Cotação"], (int, float)):
                 df_vis.at[i, "Cotação"] = formatar_numero_brasil(row["Cotação"], 5)
+            elif row["Cotação"] == "Sem cotação":
+                df_vis.at[i, "Cotação"] = "Sem cotação"
             
             # Substitui vazio por "-"
             if df_vis.at[i, "Data da Cotação"] == "":
@@ -303,8 +318,11 @@ def formatar_para_exibicao(df_resumo):
             df_vis.at[i, "Data da Cotação"] = "-"
         
         # Formata valor em BRL (todas as linhas)
-        valor_brl_formatado = formatar_numero_brasil(row["Valor em BRL"], 2)
-        df_vis.at[i, "Valor em BRL"] = f"R$ {valor_brl_formatado}"
+        if row["Valor em BRL"] != "-":
+            valor_brl_formatado = formatar_numero_brasil(row["Valor em BRL"], 2)
+            df_vis.at[i, "Valor em BRL"] = f"R$ {valor_brl_formatado}"
+        else:
+            df_vis.at[i, "Valor em BRL"] = "-"
     
     return df_vis
 
@@ -610,10 +628,13 @@ def gerar_excel_completo(df_csv_original, df_resumo):
                 col_data = col_inicio + 3
                 worksheet.cell(row=excel_row, column=col_data, value=row["Data da Cotação"])
                 
-                # Valor em BRL - COM MÁSCARA DE REAIS
+                # Valor em BRL - COM MÁSCARA DE REAIS (apenas se não for SDR)
                 col_brl = col_inicio + 4
-                cell_brl = worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
-                cell_brl.number_format = '"R$" #,##0.00'
+                if row["Moeda"] == "Direito Especial - SDR":
+                    worksheet.cell(row=excel_row, column=col_brl, value="-")
+                else:
+                    cell_brl = worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
+                    cell_brl.number_format = '"R$" #,##0.00'
                 
             else:
                 # Linha TOTAL
@@ -765,6 +786,8 @@ with st.expander("ℹ️ Instruções de Uso"):
     
     **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) ou data útil anterior caso caia em final de semana ou feriado
     
+    **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API PTAX, portanto o valor não é convertido para BRL
+    
     ---
     
     ### Moedas suportadas:
@@ -772,6 +795,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     - Dólar dos EUA (USD)
     - Euro (EUR)
     - Iene (JPY)
+    - Direito Especial - SDR (sem conversão)
 
     """)
 
@@ -814,5 +838,6 @@ st.divider()
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 12px;'>
     <p>Cotações fornecidas pelo Banco Central do Brasil via API PTAX</p>
+    <p><strong>Nota:</strong> Direitos Especiais de Saque (SDR) não possuem cotação disponível na API PTAX</p>
 </div>
 """, unsafe_allow_html=True)
