@@ -778,6 +778,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     3. **Download**: Após o processamento, faça o download da planilha Excel com:
        - Todos os registros do CSV original (linhas coloridas por moeda quando atendem aos critérios)
        - Tabela de resumo abaixo com totais por moeda e conversão para BRL
+       - Layout amigável: estrutura da planilha facilita confrontar os registros originais com os subtotais por moeda
     
     ---
     
