@@ -281,6 +281,44 @@ def processar_csv(df_csv):
     return df_saida
 
 
+def extrair_registros_detalhados(df_csv):
+    """
+    Extrai os registros que atendem aos critérios com colunas específicas.
+    
+    Args:
+        df_csv: DataFrame com dados do CSV original
+    
+    Returns:
+        DataFrame com registros detalhados ou None se não houver registros
+    """
+    logger.info("Extraindo registros detalhados")
+    
+    # Normaliza nomes das colunas
+    df_csv.columns = [c.strip() for c in df_csv.columns]
+    
+    # Aplica os mesmos filtros
+    df_filtrado = df_csv[
+        (df_csv["Tipo de dívida"].str.strip().str.lower() == "empréstimo ou financiamento") &
+        (df_csv["Situação da dívida"].str.strip().str.lower() == "vigente") &
+        (df_csv["Valor a liberar ou assumir (na moeda de contratação)"] > 0)
+    ].copy()
+    
+    if df_filtrado.empty:
+        return None
+    
+    # Seleciona apenas as colunas desejadas (índices de coluna começam em 0)
+    # B=1, C=2, I=8, L=11, M=12, N=13, S=18, AF=31
+    colunas_interesse = df_csv.columns[[1, 2, 8, 11, 12, 13, 18, 31]].tolist()
+    
+    df_detalhado = df_filtrado[colunas_interesse].copy()
+    
+    # Renomeia as colunas para os nomes desejados
+    df_detalhado.columns = ["UF", "Ente", "Nome do Credor", "Moeda", "Valor contratado", "Taxa de juros", "Valor a liberar", "Data da quitação"]
+    
+    logger.info(f"Extraídos {len(df_detalhado)} registros detalhados")
+    return df_detalhado
+
+
 def formatar_para_exibicao(df_resumo):
     """
     Formata o DataFrame para exibição com símbolos de moeda e padrão brasileiro.
@@ -323,6 +361,48 @@ def formatar_para_exibicao(df_resumo):
             df_vis.at[i, "Valor em BRL"] = f"R$ {valor_brl_formatado}"
         else:
             df_vis.at[i, "Valor em BRL"] = "-"
+    
+    return df_vis
+
+
+def formatar_detalhes_para_exibicao(df_detalhes):
+    """
+    Formata o DataFrame de detalhes para exibição.
+    
+    Args:
+        df_detalhes: DataFrame com registros detalhados
+    
+    Returns:
+        DataFrame formatado para exibição
+    """
+    df_vis = df_detalhes.copy()
+    
+    # Formata valores numéricos
+    for i, row in df_vis.iterrows():
+        # Formata valor a liberar
+        if pd.notna(row["Valor a liberar"]) and isinstance(row["Valor a liberar"], (int, float)):
+            df_vis.at[i, "Valor a liberar"] = formatar_numero_brasil(row["Valor a liberar"], 2)
+        
+        # Formata valor contratado (máscara de moeda sem símbolo)
+        if pd.notna(row["Valor contratado"]) and isinstance(row["Valor contratado"], (int, float)):
+            df_vis.at[i, "Valor contratado"] = formatar_numero_brasil(row["Valor contratado"], 2)
+        
+        # Formata taxa de juros (se for numérico)
+        if pd.notna(row["Taxa de juros"]) and isinstance(row["Taxa de juros"], (int, float)):
+            df_vis.at[i, "Taxa de juros"] = formatar_numero_brasil(row["Taxa de juros"], 2)
+        
+        # Formata data da quitação (se for datetime)
+        if pd.notna(row["Data da quitação"]):
+            if isinstance(row["Data da quitação"], (datetime, pd.Timestamp)):
+                df_vis.at[i, "Data da quitação"] = row["Data da quitação"].strftime("%d/%m/%Y")
+            elif isinstance(row["Data da quitação"], str):
+                # Tenta converter string para data
+                try:
+                    data_obj = datetime.strptime(row["Data da quitação"], "%Y-%m-%d")
+                    df_vis.at[i, "Data da quitação"] = data_obj.strftime("%d/%m/%Y")
+                except:
+                    # Mantém o valor original se não conseguir converter
+                    pass
     
     return df_vis
 
@@ -392,6 +472,69 @@ def gerar_html_tabela(df_vis):
         html += f'<td>{row["Cotação"]}</td>'
         html += f'<td>{row["Data da Cotação"]}</td>'
         html += f'<td>{row["Valor em BRL"]}</td>'
+        html += '</tr>'
+    
+    html += "</tbody></table>"
+    return html
+
+
+def gerar_html_tabela_detalhes(df_vis):
+    """
+    Gera HTML customizado para exibir a tabela de detalhes.
+    
+    Args:
+        df_vis: DataFrame formatado para exibição
+    
+    Returns:
+        String com HTML da tabela
+    """
+    html = """
+    <style>
+    .dataframe-detalhes {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 13px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dataframe-detalhes th {
+        background-color: #2c3e50;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+    }
+    .dataframe-detalhes td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #ddd;
+    }
+    .dataframe-detalhes tr:hover {
+        background-color: #f5f5f5;
+    }
+    .dataframe-detalhes tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    </style>
+    <table class="dataframe-detalhes">
+    <thead>
+        <tr>
+    """
+    
+    # Cabeçalhos
+    for col in df_vis.columns:
+        html += f'<th>{col}</th>'
+    
+    html += """
+        </tr>
+    </thead>
+    <tbody>
+    """
+    
+    # Dados
+    for _, row in df_vis.iterrows():
+        html += '<tr>'
+        for col in df_vis.columns:
+            html += f'<td>{row[col]}</td>'
         html += '</tr>'
     
     html += "</tbody></table>"
@@ -711,6 +854,9 @@ if uploaded_file:
             # Processa os dados
             df_resumo = processar_csv(df_csv)
             
+            # Extrai registros detalhados
+            df_detalhes = extrair_registros_detalhados(df_csv)
+            
             # Verifica se encontrou registros
             if df_resumo is None:
                 st.warning("⚠️ **Nenhum registro encontrado que atenda aos critérios**")
@@ -725,6 +871,7 @@ if uploaded_file:
             
             # Formata para exibição
             df_vis = formatar_para_exibicao(df_resumo)
+            df_detalhes_vis = formatar_detalhes_para_exibicao(df_detalhes) if df_detalhes is not None else None
         
         # Exibe resultado
         st.success("✅ Processamento concluído com sucesso!")
@@ -747,10 +894,20 @@ if uploaded_file:
                 use_container_width=True
             )
         
-        # Informações adicionais
-        st.divider()
+        # Informações adicionais - MOVIDAS PARA AQUI
         st.caption(f"📅 Processado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}")
         st.caption(f"📄 {len(df_resumo) - 1} moeda(s) utilizada(s)")
+        
+        # ====== NOVA SEÇÃO: REGISTROS DETALHADOS ======
+        if df_detalhes_vis is not None:
+            st.divider()
+            st.subheader("📋 Registros de dívida com valor a liberar")
+            
+            # Exibe tabela HTML customizada de detalhes
+            html_tabela_detalhes = gerar_html_tabela_detalhes(df_detalhes_vis)
+            st.markdown(html_tabela_detalhes, unsafe_allow_html=True)
+            
+            st.caption(f"📊 Total de {len(df_detalhes_vis)} registro(s)")
         
     except ValueError as ve:
         st.error(f"❌ Erro de validação: {ve}")
@@ -779,7 +936,7 @@ with st.expander("ℹ️ Instruções de Uso"):
        - Todos os registros do CSV original (linhas coloridas por moeda quando atendem aos critérios)
        - Tabela de resumo abaixo com totais por moeda e conversão para BRL
        - Layout amigável: estrutura da planilha facilita confrontar os registros originais com os subtotais por moeda
-    
+
     ---
     
     ### Sobre as cotações:
@@ -796,7 +953,6 @@ with st.expander("ℹ️ Instruções de Uso"):
     - Dólar dos EUA (USD)
     - Euro (EUR)
     - Iene (JPY)
-    - Direito Especial - SDR (sem conversão)
 
     """)
 
@@ -818,7 +974,7 @@ with st.expander("🔧 Informações Técnicas"):
     
     ### Formatação do Excel:
     - **AutoFiltro**: Filtros automáticos em todas as colunas dos dados originais
-    - **Fórmula SUM**: Total geral dinâmico que se ajusta aos filtros aplicados
+    - **Fórmula SUBTOTAL**: Total geral dinâmico que se ajusta aos filtros aplicados
     - **Linhas coloridas**: Registros que atendem aos critérios são pintados por moeda
     - **Cores por moeda**: Verde (Real), Amarelo (Dólar), Azul (Euro), Laranja (SDR), Verde água (Iene)
     - **Legenda visual**: Células da coluna "Moeda" na tabela de resumo pintadas com as cores correspondentes
