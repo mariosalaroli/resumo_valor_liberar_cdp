@@ -839,6 +839,5 @@ st.divider()
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 12px;'>
     <p>Cotações fornecidas pelo Banco Central do Brasil via API PTAX</p>
-    <p><strong>Nota:</strong> Direitos Especiais de Saque (SDR) não possuem cotação disponível na API PTAX</p>
 </div>
 """, unsafe_allow_html=True)
