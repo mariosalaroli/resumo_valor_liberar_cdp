@@ -509,10 +509,26 @@ def gerar_html_tabela_detalhes(df_vis):
         border-bottom: 1px solid #ddd;
     }
     .dataframe-detalhes tr:hover {
-        background-color: #f5f5f5;
+        background-color: rgba(0, 0, 0, 0.05);
     }
     .dataframe-detalhes tr:nth-child(even) {
-        background-color: #f9f9f9;
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    /* Ajustes para modo escuro */
+    @media (prefers-color-scheme: dark) {
+        .dataframe-detalhes {
+            box-shadow: 0 2px 4px rgba(255,255,255,0.1);
+        }
+        .dataframe-detalhes td {
+            border-bottom: 1px solid #444;
+        }
+        .dataframe-detalhes tr:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .dataframe-detalhes tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
     }
     </style>
     <table class="dataframe-detalhes">
