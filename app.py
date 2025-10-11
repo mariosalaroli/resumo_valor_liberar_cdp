@@ -962,7 +962,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     
     📅 Datas das Cotações:
 
-    | RREO exigível | Vigência | Data da cotação |
+    | RREO exigível | Vigência | Data da cotação* |
     |----------|-----------------|-------------------|
     | 1º Bimestre | 30/03 a 29/05 | **28/02** |
     | 2º Bimestre | 30/05 a 29/07 | **30/04** |
@@ -971,6 +971,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     | 5º Bimestre | 30/11 a 29/01 | **31/10** |
     | 6º Bimestre | 30/01 a 29/03 | **31/12** |
 
+    ** Ou data útil anterior.*
     
     **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API PTAX, portanto o valor não é convertido para BRL
     
