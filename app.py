@@ -958,7 +958,19 @@ with st.expander("ℹ️ Instruções de Uso"):
     ### Sobre as cotações:
     **Fonte**: Os valores serão convertidos para Real utilizando a cotação PTAX de venda do Banco Central, referente ao fechamento do dia
     
-    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) ou data útil anterior caso caia em final de semana ou feriado
+    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado.
+    
+    📅 Datas das Cotações:
+
+    | RREO exigível | Vigência | Data da cotação |
+    |----------|-----------------|-------------------|
+    | 1º Bimestre | 30/03 a 29/05 | **28/02** |
+    | 2º Bimestre | 30/05 a 29/07 | **30/04** |
+    | 3º Bimestre | 30/07 a 29/09 | **30/06** |
+    | 4º Bimestre | 30/09 a 29/11 | **31/08** |
+    | 5º Bimestre | 30/11 a 29/01 | **31/10** |
+    | 6º Bimestre | 30/01 a 29/03 | **31/12** |
+
     
     **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API PTAX, portanto o valor não é convertido para BRL
     
