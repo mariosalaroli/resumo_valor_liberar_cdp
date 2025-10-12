@@ -918,7 +918,7 @@ if uploaded_file:
         if df_detalhes_vis is not None:
             st.divider()
             st.subheader("📋 Registros de dívida com valor a liberar", 
-                         help="💡 Para melhor visualização da tabela, clique nos 3 pontos (⋮) no canto superior direito, depois em settings e ative 'Wide mode'")
+                         help="💡 Para melhor visualização da tabela, clique nos 3 pontos (⋮) no canto superior direito, depois em 'Settings' e ative o 'Wide mode'")
             
             # Exibe tabela HTML customizada de detalhes
             html_tabela_detalhes = gerar_html_tabela_detalhes(df_detalhes_vis)
