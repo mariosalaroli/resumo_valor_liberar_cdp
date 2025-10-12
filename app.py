@@ -143,7 +143,7 @@ def data_cotacao():
     return data_base.strftime("%m/%d/%Y")
 
 
-@st.cache_data(ttl=86400)  # Cache por 24 horas
+@st.cache_data(ttl=28800)  # Cache por 8 horas
 def cotacao_bacen(moeda, data_ref):
     """
     Busca cotação PTAX de venda no Banco Central para uma moeda e data específicas.
@@ -958,11 +958,11 @@ with st.expander("ℹ️ Instruções de Uso"):
     ### Sobre as cotações:
     **Fonte**: Os valores serão convertidos para Real utilizando a cotação PTAX de venda do Banco Central, referente ao fechamento do dia
     
-    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado
+    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado.
     
     📅 Datas das Cotações:
 
-    | RREO exigível | Vigência | Data da cotação* |
+    | RREO exigível | Vigência | Data da cotação |
     |----------|-----------------|-------------------|
     | 1º Bimestre | 30/03 a 29/05 | **28/02** |
     | 2º Bimestre | 30/05 a 29/07 | **30/04** |
@@ -971,7 +971,6 @@ with st.expander("ℹ️ Instruções de Uso"):
     | 5º Bimestre | 30/11 a 29/01 | **31/10** |
     | 6º Bimestre | 30/01 a 29/03 | **31/12** |
 
-    **Ou data útil anterior.*
     
     **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API PTAX, portanto o valor não é convertido para BRL
     
@@ -1015,7 +1014,7 @@ with st.expander("🔧 Informações Técnicas"):
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
-    - Cache de cotações por 24 horas (reduz chamadas à API)
+    - Cache de cotações por 8 horas (reduz chamadas à API)
     - Validações em múltiplas etapas do processamento
     """)
 
