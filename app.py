@@ -178,7 +178,7 @@ def cotacao_bacen(moeda, data_ref):
                 fechamento = df[df['tipoBoletim'] == 'Fechamento PTAX']
                 
                 if not fechamento.empty:
-                    # ALTERAÇÃO: Mudou de 'cotacaoCompra' para 'cotacaoVenda'
+                    # Cotação de venda: 'cotacaoVenda'
                     cotacao = float(fechamento['cotacaoVenda'].values[-1])
                     data_formatada = datetime.strptime(dt_busca, "%m/%d/%Y").strftime("%d/%m/%Y")
                     logger.info(f"Cotação encontrada: {cotacao} em {data_formatada}")
@@ -910,14 +910,35 @@ if uploaded_file:
                 use_container_width=True
             )
         
-        # Informações adicionais - MOVIDAS PARA AQUI
+        # Informações adicionais
         st.caption(f"📅 Processado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}")
         st.caption(f"📄 {len(df_resumo) - 1} moeda(s) utilizada(s)")
         
-        # ====== NOVA SEÇÃO: REGISTROS DETALHADOS ======
+        # ====== REGISTROS DETALHADOS ======
         if df_detalhes_vis is not None:
             st.divider()
-            st.subheader("📋 Registros de dívida com valor a liberar")
+            
+            # Título e botão de wide mode na mesma linha
+            col_titulo, col_botao = st.columns([3, 1])
+            
+            with col_titulo:
+                st.subheader("📋 Registros de dívida com valor a liberar")
+            
+            with col_botao:
+                # Botão que usa checkbox para alternar (sem rerun)
+                wide_mode = st.checkbox("↔️ Alargar a tela", value=False, key="wide_mode_detalhes", label_visibility="visible")
+            
+            # Aplica wide mode via CSS se ativado
+            if wide_mode:
+                st.markdown("""
+                <style>
+                .main .block-container {
+                    max-width: 95% !important;
+                    padding-left: 2rem !important;
+                    padding-right: 2rem !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
             
             # Exibe tabela HTML customizada de detalhes
             html_tabela_detalhes = gerar_html_tabela_detalhes(df_detalhes_vis)
