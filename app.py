@@ -926,16 +926,19 @@ if uploaded_file:
             
             with col_botao:
                 # Botão que usa checkbox para alternar (sem rerun)
-                wide_mode = st.checkbox("↔️ Alargar a tela", value=False, key="wide_mode_detalhes", label_visibility="visible")
+                wide_mode = st.checkbox("↔️ Alargar tela", value=False, key="wide_mode_detalhes")
             
-            # Aplica wide mode via CSS se ativado
+            # Aplica wide mode via CSS se ativado (funciona publicado)
             if wide_mode:
                 st.markdown("""
                 <style>
+                section[data-testid="stSidebar"] {
+                    display: none;
+                }
                 .main .block-container {
-                    max-width: 95% !important;
-                    padding-left: 2rem !important;
-                    padding-right: 2rem !important;
+                    max-width: 100% !important;
+                    padding-left: 5% !important;
+                    padding-right: 5% !important;
                 }
                 </style>
                 """, unsafe_allow_html=True)
