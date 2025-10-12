@@ -720,7 +720,7 @@ def gerar_excel_completo(df_csv_original, df_resumo):
         # Adiciona rótulo "Total" na coluna anterior
         col_rotulo = coluna_valor_liberar - 1
         if col_rotulo >= 1:
-            worksheet.cell(row=linha_formula, column=col_rotulo, value="Total")
+            worksheet.cell(row=linha_formula, column=col_rotulo, value="Subtotal")
             worksheet.cell(row=linha_formula, column=col_rotulo).font = Font(bold=True)
         
         # Adiciona a fórmula na coluna de valor
