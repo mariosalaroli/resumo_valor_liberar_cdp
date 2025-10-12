@@ -917,31 +917,8 @@ if uploaded_file:
         # ====== REGISTROS DETALHADOS ======
         if df_detalhes_vis is not None:
             st.divider()
-            
-            # Título e botão de wide mode na mesma linha
-            col_titulo, col_botao = st.columns([3, 1])
-            
-            with col_titulo:
-                st.subheader("📋 Registros de dívida com valor a liberar")
-            
-            with col_botao:
-                # Botão que usa checkbox para alternar (sem rerun)
-                wide_mode = st.checkbox("↔️ Alargar tela", value=False, key="wide_mode_detalhes")
-            
-            # Aplica wide mode via CSS se ativado (funciona publicado)
-            if wide_mode:
-                st.markdown("""
-                <style>
-                section[data-testid="stSidebar"] {
-                    display: none;
-                }
-                .main .block-container {
-                    max-width: 100% !important;
-                    padding-left: 5% !important;
-                    padding-right: 5% !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
+            st.subheader("📋 Registros de dívida com valor a liberar", 
+                         help="💡 Para melhor visualização da tabela, clique nos 3 pontos (⋮) no canto superior direito e ative 'Wide mode'")
             
             # Exibe tabela HTML customizada de detalhes
             html_tabela_detalhes = gerar_html_tabela_detalhes(df_detalhes_vis)
