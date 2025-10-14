@@ -39,12 +39,12 @@ SIMBOLOS_MOEDAS = {
 # Intervalos bimestrais do RREO: (início período, fim período, data referência cotação)
 # Formato: ((mês_ini, dia_ini), (mês_fim, dia_fim), (mês_ref, dia_ref))
 INTERVALOS_RREO = [
-    ((3, 30), (5, 29), (2, 28)),   # Mar/Abr → Cotação 28/fev
-    ((5, 30), (7, 29), (4, 30)),   # Mai/Jun → Cotação 30/abr
-    ((7, 30), (9, 29), (6, 30)),   # Jul/Ago → Cotação 30/jun
-    ((9, 30), (11, 29), (8, 31)),  # Set/Out → Cotação 31/ago
-    ((11, 30), (1, 29), (10, 31)), # Nov/Dez → Cotação 31/out
-    ((1, 30), (3, 29), (12, 31))   # Jan/Fev → Cotação 31/dez (ano anterior)
+    ((3, 31), (5, 30), (2, 28)),   # Mar/Abr → Cotação 28/fev
+    ((5, 31), (7, 30), (4, 30)),   # Mai/Jun → Cotação 30/abr
+    ((7, 31), (9, 30), (6, 30)),   # Jul/Ago → Cotação 30/jun
+    ((10, 1), (11, 30), (8, 31)),  # Set/Out → Cotação 31/ago
+    ((12, 1), (1, 30), (10, 31)),  # Nov/Dez → Cotação 31/out
+    ((1, 31), (3, 30), (12, 31))   # Jan/Fev → Cotação 31/dez (ano anterior)
 ]
 
 MAX_ARQUIVO_MB = 50
@@ -918,7 +918,7 @@ if uploaded_file:
         if df_detalhes_vis is not None:
             st.divider()
             st.subheader("📋 Registros de dívida com valor a liberar", 
-                         help="💡 Para melhor visualização da tabela, clique nos 3 pontos (⋮) no canto superior direito, depois em 'Settings' e ative o 'Wide mode'")
+                         help="💡 Para melhor visualização da tabela, clique nos 3 pontos (⋮) no canto superior direito, depois em settings e ative 'Wide mode'")
             
             # Exibe tabela HTML customizada de detalhes
             html_tabela_detalhes = gerar_html_tabela_detalhes(df_detalhes_vis)
@@ -959,20 +959,19 @@ with st.expander("ℹ️ Instruções de Uso"):
     ### Sobre as cotações:
     **Fonte**: Os valores serão convertidos para Real utilizando a cotação PTAX de venda do Banco Central, referente ao fechamento do dia
     
-    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado
+    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado.
     
     📅 Datas das Cotações:
 
-    | RREO exigível | Vigência | Data da cotação* |
+    | RREO exigível | Vigência | Data da cotação |
     |----------|-----------------|-------------------|
-    | 1º Bimestre | 30/03 a 29/05 | **28/02** |
-    | 2º Bimestre | 30/05 a 29/07 | **30/04** |
-    | 3º Bimestre | 30/07 a 29/09 | **30/06** |
-    | 4º Bimestre | 30/09 a 29/11 | **31/08** |
-    | 5º Bimestre | 30/11 a 29/01 | **31/10** |
-    | 6º Bimestre | 30/01 a 29/03 | **31/12** |
-    
-    **Ou data útil anterior*
+    | 1º Bimestre | 31/03 a 30/05 | **28/02** |
+    | 2º Bimestre | 31/05 a 30/07 | **30/04** |
+    | 3º Bimestre | 31/07 a 30/09 | **30/06** |
+    | 4º Bimestre | 01/10 a 30/11 | **31/08** |
+    | 5º Bimestre | 01/12 a 30/01 | **31/10** |
+    | 6º Bimestre | 31/01 a 30/03 | **31/12** |
+
     
     **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API PTAX, portanto o valor não é convertido para BRL
     
