@@ -963,7 +963,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     
     📅 Datas das Cotações:
 
-    | RREO exigível | Vigência | Data da cotação |
+    | RREO exigível | Período de análise | Data da cotação |
     |----------|-----------------|-------------------|
     | 1º Bimestre | 31/03 a 30/05 | **28/02** |
     | 2º Bimestre | 31/05 a 30/07 | **30/04** |
