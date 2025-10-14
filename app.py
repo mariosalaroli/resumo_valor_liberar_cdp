@@ -970,7 +970,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     | 3º Bimestre | 31/07 a 30/09 | **30/06** |
     | 4º Bimestre | 01/10 a 30/11 | **31/08** |
     | 5º Bimestre | 01/12 a 30/01 | **31/10** |
-    | 6º Bimestre | 31/01 a 30/03 | **31/12** (ano anterior) |
+    | 6º Bimestre | 31/01 a 30/03 (ano seguinte) | **31/12** |
 
     **Ou dia útil anterior*
     
