@@ -1002,7 +1002,7 @@ with st.expander("🔧 Informações Técnicas"):
     Valor a liberar > 0
     ```
     
-    **Formatação do Excel:**
+    ### Formatação do Excel:
     - **AutoFiltro**: Filtros automáticos aplicados em todas as colunas dos dados originais
     - **Fórmula SUBTOTAL**: Total dinâmico que se ajusta automaticamente aos filtros aplicados
     - **Linhas coloridas**: Registros que atendem aos critérios destacados com cores por moeda
