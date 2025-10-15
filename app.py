@@ -959,7 +959,7 @@ with st.expander("ℹ️ Instruções de Uso"):
     ### Sobre as cotações:
     **Fonte**: Os valores em moeda estrangeira são convertidos para Real utilizando a cotação PTAX de venda do Banco Central, referente ao fechamento do dia
     
-    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado.
+    **Data da cotação**: A data da cotação é o último dia do RREO exigível (último dia do bimestre) na data corrente; ou data útil anterior caso caia em final de semana ou feriado
     
     📅 Datas das Cotações:
 
