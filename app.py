@@ -1012,7 +1012,7 @@ with st.expander("🔧 Informações Técnicas"):
     - **Formatação de moeda**: Coluna "Valor a liberar ou assumir (na moeda de contratação)" formatada com máscara de moeda genérica
     - **Resumo destacado**: Tabela de resumo com linha TOTAL em azul claro
     - **Máscara de Reais**: Valores em BRL formatados com "R$" no Excel
-    - **Colunas ocultas**: A, D, E, G, H, J, K, O, W até AE (inclusive)
+    - **Colunas ocultas**: A, D, E, G, H, J, K, O, W até AE
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
