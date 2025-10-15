@@ -1002,17 +1002,23 @@ with st.expander("🔧 Informações Técnicas"):
     Valor a liberar > 0
     ```
     
-    ### Formatação do Excel:
-    - **AutoFiltro**: Filtros automáticos em todas as colunas dos dados originais
-    - **Fórmula SUBTOTAL**: Total geral dinâmico que se ajusta aos filtros aplicados
-    - **Linhas coloridas**: Registros que atendem aos critérios são pintados por moeda
-    - **Cores por moeda**: Verde (Real), Amarelo (Dólar), Azul (Euro), Laranja (SDR), Verde água (Iene)
-    - **Legenda visual**: Células da coluna "Moeda" na tabela de resumo pintadas com as cores correspondentes
-    - **Formato numérico**: Padrão brasileiro (#.##0,00)
-    - **Formatação de moeda**: Coluna "Valor a liberar ou assumir (na moeda de contratação)" formatada com máscara de moeda genérica
-    - **Resumo destacado**: Tabela de resumo com linha TOTAL em azul claro
-    - **Máscara de Reais**: Valores em BRL formatados com "R$" no Excel
-    - **Colunas ocultas**: A, D, E, G, H, J, K, O, W até AE
+    **Formatação do Excel:**
+    - **AutoFiltro**: Filtros automáticos aplicados em todas as colunas dos dados originais
+    - **Fórmula SUBTOTAL**: Total dinâmico que se ajusta automaticamente aos filtros aplicados
+    - **Linhas coloridas**: Registros que atendem aos critérios destacados com cores por moeda
+    - **Cores por moeda**: 
+      - Verde claro (Real)
+      - Amarelo claro (Dólar)
+      - Azul claro (Euro)
+      - Laranja claro (SDR)
+      - Verde água claro (Iene)
+    - **Legenda visual**: Células da coluna "Moeda" no resumo mantêm as cores correspondentes
+    - **Alinhamento da tabela de resumo**: Coluna "Valor a Liberar" alinhada com a coluna correspondente do CSV para facilitar conferência
+    - **Formato numérico**: Padrão brasileiro com separador de milhar e decimal
+    - **Formatação de moeda**: Coluna de valores formatada com máscara numérica
+    - **Resumo destacado**: Linha TOTAL em azul claro e negrito
+    - **Máscara de Reais**: Valores em BRL prefixados com "R$"
+    - **Colunas ocultas**: A, D, E, G, H, J, K, O e W até AE
     
     ### Logs e cache:
     - Sistema de logs configurado para rastreabilidade
