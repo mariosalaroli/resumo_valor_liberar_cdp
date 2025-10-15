@@ -1024,6 +1024,6 @@ with st.expander("🔧 Informações Técnicas"):
 st.divider()
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 12px;'>
-    <p>Cotações fornecidas pelo Banco Central do Brasil via API PTAX</p>
+    <p>Secretaria do Tesouro Nacional - STN</p>
 </div>
 """, unsafe_allow_html=True)
