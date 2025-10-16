@@ -974,7 +974,7 @@ with st.expander("ℹ️ Instruções de Uso"):
 
     **Ou dia útil anterior*
     
-    **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API PTAX, portanto o valor não é convertido para BRL
+    **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API de Cotações PTAX do Banco Central (dados abertos), portanto o valor não é convertido para BRL
     
     ---
     
