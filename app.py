@@ -49,9 +49,32 @@ INTERVALOS_RREO = [
 
 MAX_ARQUIVO_MB = 50
 
-# ====== Inicializa PTAX ======
-ptax = PTAX()
-ep_cotacao = ptax.get_endpoint('CotacaoMoedaDia')
+# ====== Variáveis globais para PTAX ======
+ptax = None
+ep_cotacao = None
+api_disponivel = None  # None = não testado ainda, True = disponível, False = indisponível
+
+def inicializar_ptax():
+    """
+    Inicializa a conexão com a API PTAX do Banco Central.
+    Retorna True se bem-sucedido, False caso contrário.
+    """
+    global ptax, ep_cotacao, api_disponivel
+    
+    if api_disponivel is True:  # Já inicializado com sucesso
+        return True
+    
+    try:
+        logger.info("Tentando conectar à API PTAX do Banco Central...")
+        ptax = PTAX()
+        ep_cotacao = ptax.get_endpoint('CotacaoMoedaDia')
+        api_disponivel = True
+        logger.info("Conexão com API PTAX estabelecida com sucesso")
+        return True
+    except Exception as e:
+        logger.error(f"Erro ao conectar à API PTAX: {e}")
+        api_disponivel = False
+        return False
 
 # ====== Funções Auxiliares ======
 def formatar_numero_brasil(valor, casas_decimais=2):
@@ -156,6 +179,8 @@ def cotacao_bacen(moeda, data_ref):
     Returns:
         Tupla (cotação, data_utilizada) ou ("-", "-") se não encontrar
     """
+    global ptax, ep_cotacao, api_disponivel
+    
     if moeda == "BRL":
         logger.info("Moeda BRL, retornando cotação 1.0")
         return 1.0, ""
@@ -164,6 +189,16 @@ def cotacao_bacen(moeda, data_ref):
     if moeda == "XDR":
         logger.info("Moeda SDR, retornando 'Sem cotação'")
         return "Sem cotação", "-"
+    
+    # Verifica se a API está disponível
+    if api_disponivel is False:
+        logger.warning(f"API indisponível, retornando sem cotação para {moeda}")
+        return "API indisponível", "-"
+    
+    # Tenta inicializar se ainda não foi feito
+    if api_disponivel is None:
+        if not inicializar_ptax():
+            return "API indisponível", "-"
     
     # Tenta buscar cotação nos últimos 5 dias úteis
     for i in range(5):
@@ -837,6 +872,29 @@ st.set_page_config(
 )
 
 st.title("💱 Gerar resumo do valor a liberar das dívidas no CDP")
+
+# Verifica se a API está disponível no carregamento da página
+if api_disponivel is None:
+    with st.spinner('🔄 Verificando conexão com API do Banco Central...'):
+        if not inicializar_ptax():
+            st.error("""
+            ⚠️ **API do Banco Central temporariamente indisponível**
+            
+            Não foi possível conectar à API de Cotações PTAX do Banco Central. 
+            Isso pode ocorrer por:
+            - Manutenção programada da API
+            - Instabilidade temporária na conexão
+            - Problemas técnicos no serviço
+            
+            **O que fazer:**
+            1. Aguarde alguns minutos e recarregue a página
+            2. Tente novamente mais tarde
+            3. Se o problema persistir, entre em contato com o suporte
+            
+            ⚠️ **Importante:** Sem acesso à API, não será possível buscar cotações atualizadas para conversão de moedas.
+            """)
+            st.info("💡 Você pode tentar recarregar a página pressionando **F5** ou clicando no botão 'Rerun' no canto superior direito.")
+            st.stop()
 
 # Upload do arquivo
 uploaded_file = st.file_uploader(
