@@ -25,7 +25,9 @@ MAPA_MOEDAS = {
     "Dólar dos EUA": "USD",
     "Euro": "EUR",
     "Direito Especial - SDR": "XDR",
-    "Iene": "JPY"
+    "Iene": "JPY",
+    "Franco suíço": "CHF",     
+    "Libra esterlina": "GBP"
 }
 
 SIMBOLOS_MOEDAS = {
@@ -33,7 +35,9 @@ SIMBOLOS_MOEDAS = {
     "Dólar dos EUA": "US$",
     "Euro": "€",
     "Direito Especial - SDR": "SDR",
-    "Iene": "¥"
+    "Iene": "¥",
+    "Franco suíço": "CHF",
+    "Libra esterlina": "£"
 }
 
 # Intervalos bimestrais do RREO: (início período, fim período, data referência cotação)
@@ -613,12 +617,14 @@ def gerar_excel_completo(df_csv_original, df_resumo):
     
     # Cores por moeda (tons pastéis para melhor leitura)
     CORES_MOEDAS = {
-        "Real": "C6EFCE",           # Verde claro
-        "Dólar dos EUA": "FFF2CC",  # Amarelo claro
-        "Euro": "DDEBF7",           # Azul claro
-        "Direito Especial - SDR": "FCE4D6",  # Laranja claro
-        "Iene": "E2EFDA"            # Verde água claro
-    }
+        "Real": "C6EFCE",                   # Verde claro
+        "Dólar dos EUA": "FFF2CC",          # Amarelo claro
+        "Euro": "DDEBF7",                   # Azul claro
+        "Direito Especial - SDR": "FCE4D6", # Laranja claro
+        "Iene": "E2EFDA",                   # Verde água claro
+        "Franco suíço": "F4CCCC",           # Vermelho claro
+        "Libra esterlina": "D9D2E9"         # Roxo claro
+}
     
     # Colunas para ocultar: A, D, E, G, H, J, K, O, W até AE (inclusive)
     colunas_para_ocultar = ['A', 'D', 'E', 'G', 'H', 'J', 'K', 'O'] + [get_column_letter(i) for i in range(23, 32)]  # W=23 até AE=31
@@ -1041,7 +1047,8 @@ with st.expander("ℹ️ Instruções de Uso"):
     - Dólar dos EUA (USD)
     - Euro (EUR)
     - Iene (JPY)
-
+    - Franco suíço (CHF)
+    - Libra esterlina (GBP)
     """)
 
 with st.expander("🔧 Informações Técnicas"):
