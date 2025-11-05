@@ -1077,6 +1077,9 @@ with st.expander("🔧 Informações Técnicas"):
       - Azul claro (Euro)
       - Laranja claro (SDR)
       - Verde água claro (Iene)
+      - Vermelho claro (CHF)
+      - Roxo claro (GBP)
+
     - **Legenda visual**: Células da coluna "Moeda" no resumo mantêm as cores correspondentes
     - **Alinhamento da tabela de resumo**: Coluna "Valor a Liberar" alinhada com a coluna correspondente do CSV para facilitar conferência
     - **Formato numérico**: Padrão brasileiro com separador de milhar e decimal
