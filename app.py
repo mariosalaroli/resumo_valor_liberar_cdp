@@ -36,7 +36,7 @@ SIMBOLOS_MOEDAS = {
     "Real": "R$",
     "Dólar dos EUA": "US$",
     "Euro": "€",
-    "Direito Especial - SDR": "SDR",
+    "Direito Especial - SDR": "XDR",
     "Iene": "¥",
     "Franco suíço": "CHF",
     "Libra esterlina": "£"
@@ -226,7 +226,7 @@ def cotacao_bacen(moeda, data_ref):
             return cotacao, data_formatada
             
         except Exception as e:
-            logger.error(f"Erro ao buscar cotação SDR: {e}")
+            logger.error(f"Erro ao buscar cotação XDR: {e}")
             return "-", "-"
     # ====== FIM DO NOVO TRATAMENTO PARA SDR ======
     
