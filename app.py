@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from bcb import PTAX
 import io
 import logging
+import requests
+from io import StringIO
 
 # ====== Configuração de Logging ======
 logging.basicConfig(
@@ -189,10 +191,44 @@ def cotacao_bacen(moeda, data_ref):
         logger.info("Moeda BRL, retornando cotação 1.0")
         return 1.0, ""
     
-    # Para SDR, não busca cotação na API
+    # ====== NOVO TRATAMENTO PARA SDR/XDR ======
     if moeda == "XDR":
-        logger.info("Moeda SDR, retornando 'Sem cotação'")
-        return "Sem cotação", "-"
+        try:
+            logger.info("Buscando cotação SDR/XDR no BCB")
+            
+            # Converter data de MM/DD/YYYY para DD/MM/YYYY
+            data_obj = datetime.strptime(data_ref, "%m/%d/%Y")
+            data_br = data_obj.strftime("%d/%m/%Y")
+            
+            # Separar dia, mês e ano
+            dia, mes, ano = data_br.split('/')
+            
+            # Calcular data do dia seguinte
+            dia_seguinte = int(dia) + 1
+            data_fim = f"{dia_seguinte:02d}/{mes}/{ano}"
+            
+            # Montar URL com data inicial e dia seguinte
+            url = f"https://ptax.bcb.gov.br/ptax_internet/consultaBoletim.do?method=gerarCSVFechamentoMoedaNoPeriodo&ChkMoeda=41&DATAINI={data_br}&DATAFIM={data_fim}"
+            
+            # Fazer requisição
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            # Ler CSV
+            csv_content = response.content.decode('latin-1')
+            df = pd.read_csv(StringIO(csv_content), sep=';', decimal=',', header=None)
+            
+            # Retornar valor da coluna 5 (cotação de venda de fechamento) da primeira linha
+            cotacao = float(df.iloc[0, 5])
+            data_formatada = data_obj.strftime("%d/%m/%Y")
+            
+            logger.info(f"Cotação SDR encontrada: {cotacao} em {data_formatada}")
+            return cotacao, data_formatada
+            
+        except Exception as e:
+            logger.error(f"Erro ao buscar cotação SDR: {e}")
+            return "-", "-"
+    # ====== FIM DO NOVO TRATAMENTO PARA SDR ======
     
     # Verifica se a API está disponível
     if api_disponivel is False:
@@ -204,7 +240,7 @@ def cotacao_bacen(moeda, data_ref):
         if not inicializar_ptax():
             return "API indisponível", "-"
     
-    # Tenta buscar cotação nos últimos 5 dias úteis
+    # Tenta buscar cotação nos últimos 5 dias úteis (para outras moedas)
     for i in range(5):
         dt_busca = (datetime.strptime(data_ref, "%m/%d/%Y") - timedelta(days=i)).strftime("%m/%d/%Y")
         
@@ -1038,14 +1074,13 @@ with st.expander("ℹ️ Instruções de Uso"):
 
     **Ou dia útil anterior*
     
-    **SDR**: Para Direitos Especiais de Saque (SDR), não há cotação disponível na API de Cotações PTAX do Banco Central (dados abertos), portanto o valor não é convertido para BRL
-    
     ---
     
     ### Moedas suportadas:
     - Real (BRL)
     - Dólar dos EUA (USD)
     - Euro (EUR)
+    - Direito Especial de Saque (SDR/XDR)
     - Iene (JPY)
     - Franco suíço (CHF)
     - Libra esterlina (GBP)
