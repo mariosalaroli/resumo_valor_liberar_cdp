@@ -1078,11 +1078,11 @@ with st.expander("ℹ️ Instruções de Uso"):
     
     ### Moedas suportadas:
     - Real (BRL)
+    - Direito Especial de Saque (SDR/XDR)
     - Dólar dos EUA (USD)
     - Euro (EUR)
-    - Direito Especial de Saque (SDR/XDR)
-    - Iene (JPY)
     - Franco suíço (CHF)
+    - Iene (JPY)
     - Libra esterlina (GBP)
     """)
 
