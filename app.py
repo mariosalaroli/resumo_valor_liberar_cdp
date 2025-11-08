@@ -324,19 +324,12 @@ def processar_csv(df_csv):
         # Busca cotação
         cot, data_usada = cotacao_bacen(codigo, data_ref)
         
-        # Para SDR, não calcula valor em BRL
-        if nome_moeda == "Direito Especial - SDR":
-            valor_brl = "-"
-        else:
-            # Calcula valor em BRL para outras moedas
-            valor_brl = valor * cot if isinstance(cot, float) else valor
+        # Calcula valor em BRL
+        valor_brl = valor * cot if isinstance(cot, float) else valor
         
         valores.append((nome_moeda, valor, cot, data_usada, valor_brl))
         
-        if nome_moeda == "Direito Especial - SDR":
-            logger.info(f"SDR: {valor} × Sem cotação = -")
-        else:
-            logger.info(f"{nome_moeda}: {valor} × {cot} = R$ {valor_brl:,.2f}")
+        logger.info(f"{nome_moeda}: {valor} × {cot} = R$ {valor_brl:,.2f}")
     
     # Cria DataFrame de saída
     df_saida = pd.DataFrame(
@@ -864,13 +857,10 @@ def gerar_excel_completo(df_csv_original, df_resumo):
                 col_data = col_inicio + 3
                 worksheet.cell(row=excel_row, column=col_data, value=row["Data da Cotação"])
                 
-                # Valor em BRL - COM MÁSCARA DE REAIS (apenas se não for SDR)
+                # Valor em BRL - COM MÁSCARA DE REAIS
                 col_brl = col_inicio + 4
-                if row["Moeda"] == "Direito Especial - SDR":
-                    worksheet.cell(row=excel_row, column=col_brl, value="-")
-                else:
-                    cell_brl = worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
-                    cell_brl.number_format = '"R$" #,##0.00'
+                cell_brl = worksheet.cell(row=excel_row, column=col_brl, value=row["Valor em BRL"])
+                cell_brl.number_format = '"R$" #,##0.00'
                 
             else:
                 # Linha TOTAL
