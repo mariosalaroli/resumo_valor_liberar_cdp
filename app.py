@@ -45,12 +45,12 @@ SIMBOLOS_MOEDAS = {
 # Intervalos bimestrais do RREO: (início período, fim período, data referência cotação)
 # Formato: ((mês_ini, dia_ini), (mês_fim, dia_fim), (mês_ref, dia_ref))
 INTERVALOS_RREO = [
-    ((3, 31), (5, 30), (2, 28)),   # Mar/Abr → Cotação 28/fev
-    ((5, 31), (7, 30), (4, 30)),   # Mai/Jun → Cotação 30/abr
-    ((7, 31), (9, 30), (6, 30)),   # Jul/Ago → Cotação 30/jun
-    ((10, 1), (11, 30), (8, 31)),  # Set/Out → Cotação 31/ago
-    ((12, 1), (1, 30), (10, 31)),  # Nov/Dez → Cotação 31/out
-    ((1, 31), (3, 30), (12, 31))   # Jan/Fev → Cotação 31/dez (ano anterior)
+    ((3, 31), (5, 30), (2, 28)),   # 31/Mar a 30/Mai → Cotação 28/fev
+    ((5, 31), (7, 30), (4, 30)),   # 31/Mai a 30/Jul → Cotação 30/abr
+    ((7, 31), (9, 30), (6, 30)),   # 31/Jul a 30/Set → Cotação 30/jun
+    ((10, 1), (11, 30), (8, 31)),  # 01/Out a 30/Nov → Cotação 31/ago
+    ((12, 1), (1, 30), (10, 31)),  # 01/Dez a 30/Jan → Cotação 31/out
+    ((1, 31), (3, 30), (12, 31))   # 31/Jan a 30/Mar → Cotação 31/dez (ano anterior)
 ]
 
 MAX_ARQUIVO_MB = 50
@@ -145,18 +145,31 @@ def data_cotacao():
         mes_ref, dia_ref = referencia
         
         # Ajusta o ano para intervalos que cruzam o ano
-        if mes_ini < mes_fim:
+        if mes_ini <= mes_fim:
+            # Intervalo não cruza ano (ex: 31/03 a 30/05)
             ini = datetime(ano, mes_ini, dia_ini)
             fim_periodo = datetime(ano, mes_fim, dia_fim)
         else:
-            ini = datetime(ano, mes_ini, dia_ini)
-            fim_periodo = datetime(ano + 1, mes_fim, dia_fim)
+            # Intervalo cruza ano (ex: 01/12 a 30/01)
+            # Se hoje está antes de junho, o período começou no ano anterior
+            if hoje.month <= 6:
+                ini = datetime(ano - 1, mes_ini, dia_ini)
+                fim_periodo = datetime(ano, mes_fim, dia_fim)
+            else:
+                ini = datetime(ano, mes_ini, dia_ini)
+                fim_periodo = datetime(ano + 1, mes_fim, dia_fim)
         
         # Verifica se a data atual está no intervalo
         if ini <= hoje <= fim_periodo:
-            # Dezembro do ano anterior para o intervalo Jan/Fev
-            ano_ref = ano if mes_ref != 12 else ano - 1
+            # Dezembro do ano anterior para o intervalo Jan/Mar
+            if mes_ref == 12:
+                # Se estamos em Jan-Mar, a cotação é de Dez do ano anterior
+                ano_ref = ano - 1 if hoje.month <= 3 else ano
+            else:
+                ano_ref = ano
+            
             data_base = datetime(ano_ref, mes_ref, dia_ref)
+            logger.info(f"Intervalo encontrado: {ini.strftime('%d/%m/%Y')} a {fim_periodo.strftime('%d/%m/%Y')}")
             break
     else:
         # Fallback: último dia de fevereiro
@@ -517,6 +530,19 @@ def gerar_html_tabela(df_vis):
         padding: 12px;
         font-size: 15px;
         color: inherit;
+    }
+    
+    /* Ajustes para modo escuro */
+    @media (prefers-color-scheme: dark) {
+        .dataframe-custom {
+            box-shadow: 0 2px 4px rgba(255,255,255,0.1);
+        }
+        .dataframe-custom td {
+            border-bottom: 1px solid #444;
+        }
+        .dataframe-custom tr:hover:not(.total-row) {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
     }
     </style>
     <table class="dataframe-custom">
@@ -900,7 +926,7 @@ def gerar_excel_completo(df_csv_original, df_resumo):
 st.set_page_config(
     page_title="Resumo de Dívidas CDP",
     page_icon="💱",
-    layout="centered"
+    layout="wide"
 )
 
 st.title("💱 Gerar resumo do valor a liberar das dívidas no CDP")
@@ -1001,7 +1027,8 @@ if uploaded_file:
             )
         
         # Informações adicionais
-        st.caption(f"📅 Processado em: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}")
+        data_processamento = datetime.now() - timedelta(hours=3)
+        st.caption(f"📅 Processado em: {data_processamento.strftime('%d/%m/%Y às %H:%M:%S')}")
         st.caption(f"📄 {len(df_resumo) - 1} moeda(s) utilizada(s)")
         
         # ====== REGISTROS DETALHADOS ======
